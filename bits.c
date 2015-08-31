@@ -1,25 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-typedef struct bits bits;
-struct bits {
-    char* data;
-    char* pos;
-    int shift;
-};
-
-#define MIN(x, y) ((x) > (y) ? (y) : (x));
-
-void printBin(char* bytes, int num) {
-    for (int i = 0; i < num; i++) {
-        unsigned char mask = 0x80;
-        while (mask > 0) {
-            printf("%d", (mask & bytes[i]) != 0 ? 1 : 0);
-            mask >>= 1;
-        }
-    }
-}
+#include "bits.h"
 
 bits* bits_new(size_t size) {
     bits* b = malloc(sizeof(bits));
@@ -43,7 +25,6 @@ void bits_write(bits* b, int val, int valSizeBits) {
         int toWrite = MIN(space, (valSizeBits - valBit));
         
         int toLsb = (valBit + (vs - valSizeBits) - (vs - 8));
-        // printf("toLsb: %d, val: %d \n", toLsb, val);
         
         // unsigned char v = val << (valBit + (vs - valSizeBits));
         unsigned char v;
@@ -53,8 +34,6 @@ void bits_write(bits* b, int val, int valSizeBits) {
             v = val >> (-toLsb);
         else
             v = val;
-            
-        // printf("v: %u \n", (char)val);
         
         v >>= b->shift;
         b->pos[0] |= v;
@@ -101,7 +80,17 @@ void bits_reset(bits* b) {
     b->shift = 0;
 }
 
-int main() {
+void printBin(char* bytes, int num) {
+    for (int i = 0; i < num; i++) {
+        unsigned char mask = 0x80;
+        while (mask > 0) {
+            printf("%d", (mask & bytes[i]) != 0 ? 1 : 0);
+            mask >>= 1;
+        }
+    }
+}
+
+int test7BitText() {
     char* txt = "Hello, world!";
     int len = strlen(txt);
     
@@ -122,7 +111,7 @@ int main() {
     return 0;
 }
 
-int main2() {
+int testWriteRead() {
     const int width = 7;
     
     bits* b = bits_new(200);

@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
-//#define DEBUG
+#include <strings.h>
+#include "bits.h"
 
 typedef enum { false, true } bool;
 
@@ -13,13 +12,6 @@ struct node {
 	node* next;
 	node* child;
 	node* parent;
-};
-
-typedef struct bits bits;
-struct bits {
-	unsigned char* data;
-	unsigned char* d;
-	int r;
 };
 
 node* trie_newNode(char v, short code) {
@@ -174,7 +166,7 @@ node* trie_insert(node* n, char* str) {
 	return f;
 }
 
-lzw_prep(node* t, short* lc) {
+void lzw_prep(node* t, short* lc) {
 	char* allSymbs = "#abcdefghijklmnopqrstuvwxyz ";
 	char* c = allSymbs;
 	while (*c != '\0') {
@@ -183,24 +175,9 @@ lzw_prep(node* t, short* lc) {
 	}
 }
 
-main() {
-	char arr[10] = {0};
-	bits b;
-	b.data = arr;
-	b.d = b.data;
-	b.r = 0;
-	
-	// bit_write(&b, 0b1010100);
-	// bit_write(&b, 0b1111111);
-	bit_write(&b, 0b0000001);
-	bit_write(&b, 0b0000001);
-	printBits(sizeof(char) * 4, b.data);
-	
-	return;
-	char* input = "this is some cool text to compress";
-	short lc = 0;
-	
+void lzw_compress(char* input, bits* b) {
 	node* trie = trie_new();
+	short lc = 1;
 	lzw_prep(trie, &lc);
 	
 	char* i = input;
@@ -208,7 +185,11 @@ main() {
 	node* f;
 	while (1) {
 		f = trie_getPrefix(trie, &i);
+		bits_write(b, f->code, 7);
+		
+		#ifdef DEBUG
 		printf("%d ", f->code);
+		#endif
 		
 		if (*i == '\0')
 			break;
@@ -216,15 +197,82 @@ main() {
 		trie_addChild(f, *i, lc++);
 	}
 	
+	#ifdef DEBUG
 	printf("\n\n");
 	trie_debugPrint(trie);
+	#endif
+	
 	trie_free(trie);
+}
+
+void lzw_decompress(bits* b) {
+	char* allSymbs = "#abcdefghijklmnopqrstuvwxyz ";
+	char ent[100][10] = {0};
+	char* c = allSymbs;
+	int i = 1;
+	while (*c != '\0') {
+		ent[i][0] = *c;
+		ent[i++][1] = '\0';
+		c++;
+	}
+	
+	char* w;
+	char* k;
+	
+	int v = bits_read(b, 7);
+	k = ent[v];
+	printf("%s", k);
+	w = k;
+	
+	while(1) {
+		v = bits_read(b, 7);
+		if (v == 0)
+			break;
+		
+		k = ent[v];
+		
+		printf("%s", k);
+		
+		char* cpy = w;
+		while (*cpy != '\0') {
+			ent[i][cpy - w] = *cpy;
+			cpy++;
+		}
+		ent[i][cpy - w] = k[0];
+		ent[i][cpy - w + 1] = '\0';
+		// printf("adding entry %d : %s\n", i, ent[i]);
+		i++;
+		
+		w = k;
+	}
+}
+
+int main() {
+	char* input = "this is some cool text to compress";
+	printf("Compressing %d byte string: \"%s\"\n", strlen(input), input);
+	
+	bits* b = bits_new(50);
+	lzw_compress(input, b);
+	
+	printf("Into %d bytes", (b->pos - b->data));
+	
+	#ifdef DEBUG
+	printf("\n\n");
+	printBin(b->data, 30);
+	#endif
+	
+	bits_reset(b);
+	
+	printf("\n\n");
+	lzw_decompress(b);
+	
+	bits_free(b);
 	
 	// testInsert();
 	// testTrie();
 }
 
-testInsert() {
+void testInsert() {
 	node* root = trie_newNode('\0', 0);
 	trie_insert(root, "apple");
 	trie_insert(root, "apiary");
@@ -238,7 +286,7 @@ testInsert() {
 	trie_free(root);
 }
 
-testTrie() {
+void testTrie() {
 	node* root = trie_newNode('\0', 0);
 	node* a = trie_newNode('a', 0);
 	node* b = trie_newNode('b', 0);
