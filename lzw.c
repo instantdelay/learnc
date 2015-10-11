@@ -3,17 +3,30 @@
 #include <strings.h>
 #include "bits.h"
 
+/** @file  */
+
 typedef enum { false, true } bool;
 
 typedef struct node node;
+/**
+ * @brief Single node in a Trie. Holds a char value and a short code.
+ */
 struct node {
+	/** @brief character value of this node */
 	char v;
+	/** @brief encoding value for a terminal node */
 	short code;
+	/** @brief pointer to the next sibling of this node or NULL */
 	node* next;
+	/** @brief pointer to the first child of this node or NULL */
 	node* child;
+	/** @brief pointer to the parent of this node or NULL */
 	node* parent;
 };
 
+/**
+ * @brief Create a new Trie node holding the specified values.
+ */
 node* trie_newNode(char v, short code) {
 	node* n = NULL;
 	n = calloc(1, sizeof(node));
@@ -28,6 +41,9 @@ node* trie_newNode(char v, short code) {
 	return n;
 }
 
+/**
+ * @brief Recursively free a Tree node and its descendants.
+ */
 void trie_free(node* n) {
 	if (n->child != NULL)
 		trie_free(n->child);
@@ -36,6 +52,9 @@ void trie_free(node* n) {
 	free(n);
 }
 
+/**
+ * @brief Allocate and return a new Trie
+ */
 node* trie_new() {
 	return trie_newNode('\0', 0);
 }
@@ -98,9 +117,12 @@ node* trie_find(node* root, char* str) {
 	}
 }
 
-/*!
-* Find the longest prefix of the given string in this tree.
-*/
+/**
+ * @brief Find the longest prefix of the given string in this tree.
+ *
+ * @return a pointer to the node containing the last character of the prefix
+ * matched. This will be the root if no characters matched.
+ */
 node* trie_getPrefix(node* root, char** strPtr) {
 	node* n = root->child;
 	node* next = NULL;
@@ -132,6 +154,10 @@ node* trie_getPrefix(node* root, char** strPtr) {
 	}
 }
 
+/**
+ * @brief Create and add a new child node holding the given values to
+ * the specified node.
+ */
 node* trie_addChild(node* n, char v, short code) {
 	if (n == NULL) {
 		printf("NULL node!");
@@ -155,6 +181,13 @@ node* trie_addChild(node* n, char v, short code) {
 	return nn;
 }
 
+/**
+ * @brief Add the given string to the trie with root n.
+ *
+ * The code will be set to 0 on each new node.
+ *
+ * @return the terminal node.
+ */
 node* trie_insert(node* n, char* str) {
 	node* f = trie_getPrefix(n, &str);
 	
@@ -166,6 +199,9 @@ node* trie_insert(node* n, char* str) {
 	return f;
 }
 
+/**
+ * @brief Prepare a trie for LZW by inserting all the supported 1 character strings.
+ */
 void lzw_prep(node* t, short* lc) {
 	char* allSymbs = "#abcdefghijklmnopqrstuvwxyz ";
 	char* c = allSymbs;
@@ -175,6 +211,9 @@ void lzw_prep(node* t, short* lc) {
 	}
 }
 
+/**
+ * @brief Compress an input string with LZW. Write the result bits to b.
+ */
 void lzw_compress(char* input, bits* b) {
 	node* trie = trie_new();
 	short lc = 1;
@@ -205,6 +244,9 @@ void lzw_compress(char* input, bits* b) {
 	trie_free(trie);
 }
 
+/**
+ * @brief Decompress a bit stream with LZW. Currently just prints the output.
+ */
 void lzw_decompress(bits* b) {
 	char* allSymbs = "#abcdefghijklmnopqrstuvwxyz ";
 	char ent[100][10] = {0};
